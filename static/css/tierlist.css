@@ -1,126 +1,125 @@
 #tierlist {
-  padding: 10px 10px 0px 10px;
-  width: calc(100% - 20px);
-  font-family: "Roboto", sans-serif;
+    padding: 10px 10px 0px 10px;
+    width: calc(100% - 20px);
+    font-family: "Roboto", sans-serif;
 }
 #tierlist-filters {
-  -ms-flex-wrap: wrap;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
 }
 #tierlist-filters *.filtre {
-  margin: 1px 3px;
+    margin: 1px 3px;
 }
 #tierlist-container {
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-  -webkit-box-orient: vertical;
-  -webkit-box-direction: normal;
-  -ms-flex-direction: column;
-  flex-direction: column;
-  -webkit-box-align: center;
-  -ms-flex-align: center;
-  align-items: center;
-  width: 100%;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    width: 100%;
 }
 .row {
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-  min-height: 100px;
-  width: 100%;
-  margin: 1px 0px 1px 0px;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    min-height: 100px;
+    width: 100%;
+    margin: 1px 0px 1px 0px;
 }
 .row .tierlist-rank {
-  min-height: 100%;
-  min-width: 40px;
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-  -webkit-box-pack: center;
-  -ms-flex-pack: center;
-  justify-content: center;
-  -webkit-box-align: center;
-  -ms-flex-align: center;
-  align-items: center;
-  border-radius: 10px 0px 0px 10px;
+    min-height: 100%;
+    min-width: 40px;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    border-radius: 10px 0px 0px 10px;
 }
 .row .container {
-  -webkit-box-flex: 1;
-  -ms-flex-positive: 1;
-  flex-grow: 1;
-  background-color: #1a1a17;
-  max-width: calc(100% - 50px);
-  border-radius: 0px 10px 10px 0px;
+    -webkit-box-flex: 1;
+    -ms-flex-positive: 1;
+    flex-grow: 1;
+    background-color: #1a1a17;
+    border-radius: 0px 10px 10px 0px;
 }
 .container {
-  display: -ms-grid;
-  display: grid;
-  padding: 5px;
-  grid-template-columns: repeat(auto-fit, 56px);
-  -ms-flex-line-pack: center;
-  align-content: center;
-  gap: 3px;
+    display: -ms-grid;
+    display: grid;
+    padding: 5px;
+    grid-template-columns: repeat(auto-fit, 56px);
+    -ms-flex-line-pack: center;
+    align-content: center;
+    gap: 3px;
 }
 #non-classed .container {
-  max-width: 100%;
+    max-width: 100%;
 }
 .container button {
-  background-color: transparent;
-  outline: none;
-  border: none;
+    background-color: transparent;
+    outline: none;
+    border: none;
 }
 .container img {
-  height: 50px;
-  width: 50px;
-  -o-object-fit: cover;
-  object-fit: cover;
-  border-radius: 10px;
+    height: 50px;
+    width: 50px;
+    -o-object-fit: cover;
+    object-fit: cover;
+    border-radius: 10px;
 }
 #row-s div:first-child {
-  background-color: #bfff7f;
+    background-color: #bfff7f;
 }
 #row-a div:first-child {
-  background-color: #ffff7f;
+    background-color: #ffff7f;
 }
 #row-b div:first-child {
-  background-color: #ffd700;
+    background-color: #ffd700;
 }
 #row-c div:first-child {
-  background-color: #ffc107;
+    background-color: #ffc107;
 }
 #row-d div:first-child {
-  background-color: #ff9800;
+    background-color: #ff9800;
 }
 #row-e div:first-child {
-  background-color: #ff5722;
+    background-color: #ff5722;
 }
 #row-f div:first-child {
-  background-color: #ff0000;
+    background-color: #ff0000;
 }
 .draggable.dragging {
-  opacity: 0.5;
+    opacity: 0.5;
 }
 
 @media screen and (min-width: 800px) {
-  .row .tierlist-rank {
-    min-width: 80px;
-  }
+    .row .tierlist-rank {
+        min-width: 80px;
+    }
 }
 
 @media screen and (min-width: 1400px) {
-  .row .tierlist-rank {
-    min-width: 95px;
-  }
-  .container {
-    grid-template-columns: repeat(auto-fit, 76px);
-  }
-  .container img {
-    height: 70px;
-    width: 70px;
-  }
-  .row .container {
-    max-width: calc(100% - 80px);
-  }
+    .row .tierlist-rank {
+        min-width: 95px;
+    }
+    .container {
+        grid-template-columns: repeat(auto-fit, 76px);
+    }
+    .container img {
+        height: 70px;
+        width: 70px;
+    }
+    .row .container {
+        max-width: calc(100% - 80px);
+    }
 }
