@@ -388,7 +388,14 @@ def get_book_by_id(id: str) -> dict:
         return None
     soup = BeautifulSoup(result.text, "html.parser")
 
-    basic_image = soup.find("img", {"class": "max_width", "itemprop": "image"}).attrs["src"].replace(".jpg", ".webp").replace(".png", ".webp")
+    try:
+        img_container = soup.find("div", {"class": "foreground"})
+        basic_image = img_container.find("img").attrs["src"]
+        basic_image = basic_image.replace(".jpg", ".webp").replace(".png", ".webp")
+    except AttributeError:
+        print(f"No image found for book {id}")
+        basic_image = ""
+        
     
     r = {
         "title": html.unescape(
