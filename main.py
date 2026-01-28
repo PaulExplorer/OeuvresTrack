@@ -11,7 +11,7 @@ from flask import (
 )
 
 from flask_minify import Minify
-from flask_compress import Compress
+# from flask_compress import Compress
 from flask_caching import Cache
 from flask_talisman import Talisman
 
@@ -93,8 +93,8 @@ if not debug and not testing:
 else:
     cache = Cache(app, config={"CACHE_TYPE": "NullCache"})
 
-compress = Compress()
-compress.init_app(app)
+# compress = Compress()
+# compress.init_app(app)
 
 Minify(app=app, html=True, js=True, cssless=True)
 
@@ -156,9 +156,9 @@ else:
         strategy="fixed-window",
     )
 
-if not debug and not testing and False:
-    compress.cache = cache
-    compress.cache_key = get_cache_key
+# if not debug and not testing and False:
+#    compress.cache = cache
+#    compress.cache_key = get_cache_key
 
 
 @app.before_request
