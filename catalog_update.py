@@ -10,6 +10,23 @@ if os.getenv("ENV") != "production":
 import api
 from datetime import date, timedelta
 from pymongo import UpdateOne
+import requests
+
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
+
+
+def _send_discord_error(message: str):
+    """Envoie une notification d'erreur sur Discord via webhook."""
+    if not DISCORD_WEBHOOK_URL:
+        return
+    try:
+        requests.post(
+            DISCORD_WEBHOOK_URL,
+            json={"content": f"[catalog_update] {message}"},
+            timeout=10,
+        )
+    except Exception:
+        pass
 
 
 def process_update(element, new_data, extra_fields=None):
@@ -98,6 +115,137 @@ def update_tv_seasons(element: dict, operation: list):
     return new_data
 
 
+def _process_element(element, today, operation):
+    """Traite un seul élément du catalogue et retourne True si une notification doit être envoyée."""
+    have_change = False
+
+    if today >= date.fromisoformat(element["recommandate_update"]):
+        print(
+            f"Check Update {element['type']}, {element['original_id']}, {element['title']} recommandé le {element['recommandate_update']}"
+        )
+        if element["type"] == "book":
+            new_data = api.get_book_by_id(element["original_id"])
+
+            operation.append(process_update(element, new_data))
+
+        elif element["type"] == "movie":
+            new_data = api.get_movie_by_id(element["original_id"])
+
+            operation.append(process_update(element, new_data))
+
+        elif element["type"] == "books":
+            new_data = api.get_books_by_id(element["original_id"])
+            operation.append(
+                process_update(
+                    element,
+                    new_data,
+                    extra_fields={"contents": new_data["contents"]},
+                )
+            )
+            if len(new_data["contents"][0]["contents"]) != len(
+                element["contents"][0]["contents"]
+            ):
+                for j, book in enumerate(new_data["contents"][0]["contents"]):
+                    if len(element["contents"][0]["contents"]) < j + 1:
+                        api.send_notification_changes(
+                            element,
+                            {
+                                "change": "new_book",
+                                "book_title": book,
+                                "book_index": j + 1,
+                                "books_count": len(
+                                    new_data["contents"][0]["contents"]
+                                ),
+                            },
+                        )
+
+                        have_change = True
+
+            if have_change:
+                element["contents"] = new_data["contents"]
+
+        elif element["type"] == "tv":
+            new_data = api.get_tv_by_id(element["original_id"])
+
+            contents: list[dict] = new_data["contents"]
+            finished = all([content.get("finished", True) for content in contents])
+            operation.append(
+                process_update(
+                    element,
+                    new_data,
+                    extra_fields={
+                        "contents": contents,
+                        "finished": finished,
+                        "recommandate_update": (
+                            today + timedelta(days=30)
+                        ).isoformat(),
+                    },
+                )
+            )
+
+            if len(contents) != len(element["contents"]):
+                for i, content in enumerate(contents):
+                    econtents = next(
+                        (
+                            c
+                            for c in element["contents"]
+                            if str(c["season_number"])
+                            == str(content["season_number"])
+                        ),
+                        None,
+                    )
+
+                    if not econtents:
+                        api.send_notification_changes(
+                            element,
+                            {
+                                "change": "new_season",
+                                "season_number": content["season_number"],
+                                "season_title": content["title"],
+                            },
+                        )
+
+                        have_change = True
+                        break
+            else:
+                for i, content in enumerate(contents):
+                    if content["contents"] != element["contents"][i]["contents"]:
+                        have_to_break = False
+                        for j, episode in enumerate(content["contents"]):
+                            if len(element["contents"][i]["contents"]) < j + 1:
+                                api.send_notification_changes(
+                                    element,
+                                    {
+                                        "change": "new_episode",
+                                        "season_number": content["season_number"],
+                                        "season_title": content["title"],
+                                        "episode_number": j + 1,
+                                    },
+                                )
+                                have_change = True
+                                have_to_break = True
+                                break
+                        if have_to_break:
+                            break
+
+            if have_change:
+                element["contents"] = contents
+
+    else:
+        if element["type"] == "tv":
+            new_data = update_tv_seasons(element, operation)
+
+            if new_data["contents"] != element["contents"]:
+                have_change = True
+                element["contents"] = new_data["contents"]
+
+            if new_data["finished"] != element["finished"]:
+                have_change = True
+                element["finished"] = new_data["finished"]
+
+    return have_change
+
+
 def check_update_catalog():
     today = date.today()
 
@@ -117,144 +265,21 @@ def check_update_catalog():
     operation = []
 
     for element in data:
-        have_change = False
+        try:
+            have_change = _process_element(element, today, operation)
 
-        if today >= date.fromisoformat(element["recommandate_update"]):
-            print(
-                f"Check Update {element['type']}, {element['original_id']}, {element['title']} recommandé le {element['recommandate_update']}"
-            )
-            if element["type"] == "book":
-                new_data = api.get_book_by_id(element["original_id"])
-
-                # ignore if book or movie
-                # if element["overview"] != new_data["overview"] or element["title"] != new_data["title"]:
-                #     have_change = True
-
-                operation.append(process_update(element, new_data))
-
-            elif element["type"] == "movie":
-                new_data = api.get_movie_by_id(element["original_id"])
-
-                # if element["overview"] != new_data["overview"] or element["title"] != new_data["title"]:
-                #     have_change = True
-
-                operation.append(process_update(element, new_data))
-
-            elif element["type"] == "books":
-                new_data = api.get_books_by_id(element["original_id"])
-                operation.append(
-                    process_update(
-                        element,
-                        new_data,
-                        extra_fields={"contents": new_data["contents"]},
-                    )
-                )
-                if len(new_data["contents"][0]["contents"]) != len(
-                    element["contents"][0]["contents"]
+            if have_change is True:
+                for ucatalog in api.db.ucatalog.find(
+                    {"id": element["original_id"], "type": element["type"]}
                 ):
-                    for j, book in enumerate(new_data["contents"][0]["contents"]):
-                        if len(element["contents"][0]["contents"]) < j + 1:
-                            api.send_notification_changes(
-                                element,
-                                {
-                                    "change": "new_book",
-                                    "book_title": book,
-                                    "book_index": j + 1,
-                                    "books_count": len(
-                                        new_data["contents"][0]["contents"]
-                                    ),
-                                },
-                            )
-
-                            have_change = True
-
-                if have_change:
-                    element["contents"] = new_data["contents"]
-
-            elif element["type"] == "tv":
-                new_data = api.get_tv_by_id(element["original_id"])
-
-                contents: list[dict] = new_data["contents"]
-                finished = all([content.get("finished", True) for content in contents])
-                operation.append(
-                    process_update(
-                        element,
-                        new_data,
-                        extra_fields={
-                            "contents": contents,
-                            "finished": finished,
-                            "recommandate_update": (
-                                today + timedelta(days=30)
-                            ).isoformat(),
-                        },
-                    )
-                )
-
-                if len(contents) != len(element["contents"]):
-                    for i, content in enumerate(contents):
-                        econtents = next(
-                            (
-                                c
-                                for c in element["contents"]
-                                if str(c["season_number"])
-                                == str(content["season_number"])
-                            ),
-                            None,
-                        )
-
-                        if not econtents:
-                            api.send_notification_changes(
-                                element,
-                                {
-                                    "change": "new_season",
-                                    "season_number": content["season_number"],
-                                    "season_title": content["title"],
-                                },
-                            )
-
-                            have_change = True
-                            break
-                else:
-                    for i, content in enumerate(contents):
-                        if content["contents"] != element["contents"][i]["contents"]:
-                            have_to_break = False
-                            for j, episode in enumerate(content["contents"]):
-                                if len(element["contents"][i]["contents"]) < j + 1:
-                                    api.send_notification_changes(
-                                        element,
-                                        {
-                                            "change": "new_episode",
-                                            "season_number": content["season_number"],
-                                            "season_title": content["title"],
-                                            "episode_number": j + 1,
-                                        },
-                                    )
-                                    have_change = True
-                                    have_to_break = True
-                                    break
-                            if have_to_break:
-                                break
-
-                if have_change:
-                    element["contents"] = contents
-
-        else:
-            if element["type"] == "tv":
-                new_data = update_tv_seasons(element, operation)
-
-                if new_data["contents"] != element["contents"]:
-                    have_change = True
-                    element["contents"] = new_data["contents"]
-
-                if new_data["finished"] != element["finished"]:
-                    have_change = True
-                    element["finished"] = new_data["finished"]
-
-        if have_change is True:
-            for ucatalog in api.db.ucatalog.find(
-                {"id": element["original_id"], "type": element["type"]}
-            ):
-                api.send_update_ucatalog(element, ucatalog)
+                    api.send_update_ucatalog(element, ucatalog)
+        except Exception as e:
+            message = (
+                f"Erreur lors du traitement de {element['type']} {element['title']} "
+                f"(id={element['original_id']}): {e}"
+            )
+            print(message)
+            _send_discord_error(message)
 
     if operation:
         api.db.catalog.bulk_write(operation)
